@@ -14,30 +14,54 @@ class UserController {
   }
 
   async store({ request }) {
-    const data = request.only([
+    const { permissions, roles, ...data } = request.only([
       "name",
       "username",
       "email",
       "password",
       "type_user_id",
+      "permissions",
+      "roles"
     ])
 
     const user = await User.create(data);
+
+    if(permissions && permissions.length > 0 ) {
+      await user.permissions().attach(permissions)
+    }
+
+    if(roles && roles.length > 0 ) {
+      await user.roles().attach(roles)
+    }
+
+    await user.loadMany(['roles', 'permissions'])
     return user;
   }
 
   async update({ params, request }) {
     const user = await User.findOrFail(params.id)
-    const data = request.only([
+    const { permissions, roles, ...data } = request.only([
       "name",
       "username",
       "email",
       "password",
       "type_user_id",
+      "permissions",
+      "roles"
     ])
 
     user.merge(data);
     await user.save();
+
+    if(permissions && permissions.length > 0 ) {
+      await user.permissions().sync(permissions)
+    }
+
+    if(roles && roles.length > 0 ) {
+      await user.roles().sync(roles)
+    }
+
+    await user.loadMany(['roles', 'permissions'])
     return user;
   }
 
